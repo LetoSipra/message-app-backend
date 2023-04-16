@@ -1,0 +1,5 @@
+{
+  "schema": "src/graphql/**/*.ts",
+  "documents": "src/graphql/**/*.ts",
+  "include": "src/grahql/**/*.ts"
+}
