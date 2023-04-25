@@ -1,4 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { PubSub } from "graphql-subscriptions";
+import { Context } from "graphql-ws";
 import { DefaultSession } from "next-auth";
 
 interface User {
@@ -13,10 +15,16 @@ interface Session {
 interface GraphQLContext {
   session: Session | null;
   prisma: PrismaClient;
-  //pubsub
+  pubsub: PubSub;
 }
 
 interface CreateUsernameResponse {
   success?: boolean;
   error?: string;
+}
+
+interface SubscriptionContext extends Context {
+  connectionParams: {
+    session?: Session;
+  };
 }

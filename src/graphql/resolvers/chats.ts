@@ -4,7 +4,45 @@ import { GraphQLContext } from "../../types/typings";
 const resolvers = {
   Query: {
     chats: async (_: any, __: any, context: GraphQLContext) => {
-      console.log("here query");
+      const { session, prisma } = context;
+      if (!session) {
+        throw new GraphQLError("Not authenticated");
+      }
+
+      const {
+        user: { id: userId },
+      } = session;
+
+      try {
+        const chats = await prisma.chat.findMany({
+          where: {
+            chatters: {
+              some: {
+                userId: {
+                  equals: userId,
+                },
+              },
+            },
+          },
+          include: {
+            chatters: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    username: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return chats;
+      } catch (error) {
+        console.log("Query error", error);
+        throw new GraphQLError("Query Error");
+      }
     },
   },
   Mutation: {
@@ -13,16 +51,16 @@ const resolvers = {
       args: { IDs: string[] },
       context: GraphQLContext
     ): Promise<{ chatId: string }> => {
-      const { session, prisma } = context;
+      const { session, prisma, pubsub } = context;
       const { IDs } = args;
 
       if (!session?.user) {
         throw new GraphQLError("Not authenticated");
       }
 
-      // const {
-      //   user: { id: userId },
-      // } = session;
+      const {
+        user: { id: userId },
+      } = session;
 
       try {
         const chat = await prisma.chat.create({
@@ -49,11 +87,24 @@ const resolvers = {
           },
         });
 
+        pubsub.publish("CHAT_CREATED", {
+          chatCreated: chat,
+        });
+
         return { chatId: chat.id };
       } catch (error) {
         console.log("!", error);
         throw new GraphQLError("Eroor creating new chat");
       }
+    },
+  },
+
+  Subscription: {
+    chatCreated: {
+      subscribe: (_: any, __: any, context: GraphQLContext) => {
+        const { pubsub } = context;
+        return pubsub.asyncIterator(["CHAT_CREATED"]);
+      },
     },
   },
 };

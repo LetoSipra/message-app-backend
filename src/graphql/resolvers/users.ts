@@ -12,6 +12,7 @@ const resolvers = {
       args: { username: string },
       context: GraphQLContext
     ): Promise<User[]> => {
+      
       const { username: searchedUsers } = args;
       const { prisma, session } = context;
 
@@ -59,6 +60,8 @@ const resolvers = {
       args: { username: string },
       context: GraphQLContext
     ): Promise<CreateUsernameResponse> => {
+      console.log("here", args);
+      
       const { username } = args;
       const { prisma, session } = context;
 

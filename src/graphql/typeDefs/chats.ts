@@ -19,11 +19,15 @@ const typeDefs = gql`
   }
   type Chatter {
     id: String
-    user: User 
+    user: User
   }
 
- type Query {
+  type Query {
     chats: [Chat]
+  }
+
+  type Subscription {
+    chatCreated: Chat
   }
 `;
 

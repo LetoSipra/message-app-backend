@@ -11,13 +11,22 @@ import { typeDefs, resolvers } from "./graphql/schema.js";
 import * as dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { getSession } from "next-auth/react";
-import { GraphQLContext, Session } from "./types/typings.js";
+import {
+  GraphQLContext,
+  Session,
+  SubscriptionContext,
+} from "./types/typings.js";
 import { PrismaClient } from "@prisma/client";
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
+import { useServer } from "graphql-ws/lib/use/ws";
+import { PubSub } from "graphql-subscriptions";
 
 dotenv.config();
 
 //Prisma Client
 const prisma = new PrismaClient();
+const pubsub = new PubSub();
 
 //GraphQL Main Schema
 const schema = makeExecutableSchema({
@@ -36,13 +45,48 @@ const app = express();
 // Our httpServer handles incoming requests to our Express app.
 // Below, we tell Apollo Server to "drain" this httpServer,
 // enabling our servers to shut down gracefully.
-const httpServer = http.createServer(app);
+const httpServer = createServer(app);
+
+// Creating the WebSocket server
+const wsServer = new WebSocketServer({
+  // This is the `httpServer` we created in a previous step.
+  server: httpServer,
+  // Pass a different path here if app.use
+  // serves expressMiddleware at a different path
+  path: "/graphql/subscriptions",
+});
+
+const serverCleanup = useServer(
+  {
+    schema,
+    context: (ctx: SubscriptionContext) => {
+      if (ctx.connectionParams && ctx.connectionParams.session) {
+        const { session } = ctx.connectionParams;
+        return { session, prisma, pubsub };
+      }
+      // Otherwise let our resolvers know we don't have a current user
+      return { session: null, prisma, pubsub };
+    },
+  },
+  wsServer
+);
 
 // Same ApolloServer initialization as before, plus the drain plugin
 // for our httpServer.
 const server = new ApolloServer({
   schema,
-  plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+  plugins: [
+    ApolloServerPluginDrainHttpServer({ httpServer }),
+    {
+      async serverWillStart() {
+        return {
+          async drainServer() {
+            await serverCleanup.dispose();
+          },
+        };
+      },
+    },
+  ],
 });
 
 // Ensure we wait for our server to start
@@ -51,7 +95,7 @@ await server.start();
 // Set up our Express middleware to handle CORS, body parsing,
 // and our expressMiddleware function.
 app.use(
-  "/",
+  "/graphql",
   cors<cors.CorsRequest>(corsOptions),
   bodyParser.json(),
   cookieParser(),
@@ -68,7 +112,7 @@ app.use(
           },
         },
       })) as Session | null; //when I add custom session to next-auth.d.ts it work perfectly as expected but typescript throws compile errors(problem is typescript related), so I had to manually type
-      return { session, prisma };
+      return { session, prisma, pubsub };
     },
   })
 );
