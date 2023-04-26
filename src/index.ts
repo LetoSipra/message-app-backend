@@ -60,12 +60,9 @@ const serverCleanup = useServer(
   {
     schema,
     context: (ctx: SubscriptionContext) => {
-      if (ctx.connectionParams && ctx.connectionParams.session) {
-        const { session } = ctx.connectionParams;
-        return { session, prisma, pubsub };
-      }
-      // Otherwise let our resolvers know we don't have a current user
-      return { session: null, prisma, pubsub };
+      const { session } = ctx.connectionParams;
+
+      return { session, prisma, pubsub };
     },
   },
   wsServer

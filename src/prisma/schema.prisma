@@ -79,5 +79,6 @@ model Message {
     chatId    String   @db.ObjectId
     chat      Chat     @relation(fields: [chatId], references: [id])
     chatterId String   @db.ObjectId
+    body      String
     chatter   User     @relation(fields: [chatterId], references: [id])
 }

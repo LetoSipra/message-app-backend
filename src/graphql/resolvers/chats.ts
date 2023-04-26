@@ -1,5 +1,6 @@
 import { GraphQLError } from "graphql";
-import { GraphQLContext } from "../../types/typings";
+import { GraphQLContext, SubscriptionPayload } from "../../types/typings";
+import { withFilter } from "graphql-subscriptions";
 
 const resolvers = {
   Query: {
@@ -101,10 +102,30 @@ const resolvers = {
 
   Subscription: {
     chatCreated: {
-      subscribe: (_: any, __: any, context: GraphQLContext) => {
-        const { pubsub } = context;
-        return pubsub.asyncIterator(["CHAT_CREATED"]);
-      },
+      subscribe: withFilter(
+        (_: any, __: any, context: GraphQLContext) => {
+          const { pubsub } = context;
+          return pubsub.asyncIterator(["CHAT_CREATED"]);
+        },
+        (payload: SubscriptionPayload, _: any, context: GraphQLContext) => {
+          const { session } = context;
+
+          if (!session?.user) {
+            throw new GraphQLError("Not authenticated");
+          }
+
+          // const { id: userId } = session.user;
+
+          const {
+            chatCreated: { chatters },
+          } = payload;
+          chatters.map((user) => console.log(user));
+          const userIsChatter = !!chatters.find(
+            (chatter) => chatter.user.id === session.user.id
+          );
+          return userIsChatter;
+        }
+      ),
     },
   },
 };

@@ -23,6 +23,18 @@ interface CreateUsernameResponse {
   error?: string;
 }
 
+interface Chatters extends User {
+  userId: string;
+  user: User;
+}
+
+interface SubscriptionPayload {
+  chatCreated: {
+    id: string;
+    chatters: Chatters[];
+  };
+}
+
 interface SubscriptionContext extends Context {
   connectionParams: {
     session?: Session;
