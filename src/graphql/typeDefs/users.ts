@@ -1,18 +1,11 @@
 import gql from "graphql-tag";
 
 const typeDefs = gql`
+  scalar Date
+
   type User {
     id: String
     username: String
-  }
-
-  type UserSession {
-    id: String
-    name: String
-    username: String
-    email: String
-    emailVerified: Boolean
-    image: String
   }
 
   type Query {

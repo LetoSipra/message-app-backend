@@ -1,42 +1,86 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { PubSub } from "graphql-subscriptions";
-import { Context } from "graphql-ws";
-import { DefaultSession } from "next-auth";
+import { Context } from "graphql-ws/lib/server";
+import {
+  conversationPopulated,
+  participantPopulated,
+} from "../graphql/resolvers/conversations";
+import { messagePopulated } from "../graphql/resolvers/messages";
+import { RedisPubSub } from "graphql-redis-subscriptions";
 
-interface User {
-  id: string;
-  username: string | null;
+export interface Session {
+  user?: User;
 }
 
-interface Session {
-  user: User & DefaultSession["user"];
-}
-
-interface GraphQLContext {
+export interface GraphQLContext {
   session: Session | null;
   prisma: PrismaClient;
-  pubsub: PubSub;
+  pubsub: RedisPubSub;
 }
 
-interface CreateUsernameResponse {
+export interface SubscriptionContext extends Context {
+  connectionParams: {
+    session?: Session;
+  };
+}
+
+/**
+ * Users
+ */
+export interface User {
+  id: string;
+  username: string;
+}
+
+export interface CreateUsernameResponse {
   success?: boolean;
   error?: string;
 }
 
-interface Chatters extends User {
-  userId: string;
-  user: User;
+export interface SearchUsersResponse {
+  users: Array<User>;
 }
 
-interface SubscriptionPayload {
-  chatCreated: {
-    id: string;
-    chatters: Chatters[];
+/**
+ * Messages
+ */
+export interface SendMessageArguments {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+}
+
+export interface SendMessageSubscriptionPayload {
+  messageSent: MessagePopulated;
+}
+
+export type MessagePopulated = Prisma.MessageGetPayload<{
+  include: typeof messagePopulated;
+}>;
+
+/**
+ * Conversations
+ */
+export type ConversationPopulated = Prisma.ConversationGetPayload<{
+  include: typeof conversationPopulated;
+}>;
+
+export type ParticipantPopulated = Prisma.ConversationParticipantGetPayload<{
+  include: typeof participantPopulated;
+}>;
+
+export interface ConversationCreatedSubscriptionPayload {
+  conversationCreated: ConversationPopulated;
+}
+
+export interface ConversationUpdatedSubscriptionData {
+  conversationUpdated: {
+    conversation: ConversationPopulated;
+    addedUserIds: Array<string>;
+    removedUserIds: Array<string>;
   };
 }
 
-interface SubscriptionContext extends Context {
-  connectionParams: {
-    session?: Session;
-  };
+export interface ConversationDeletedSubscriptionPayload {
+  conversationDeleted: ConversationPopulated;
 }

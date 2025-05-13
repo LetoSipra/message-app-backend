@@ -8,9 +8,8 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "types": ["node"],
-    "strict": true
-  },
-  "ts-node": {
-    "esm": true
+    "strict": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
   }
 }
