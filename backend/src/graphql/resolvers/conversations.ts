@@ -7,7 +7,7 @@ import {
   ConversationPopulated,
   ConversationUpdatedSubscriptionData,
   GraphQLContext,
-} from "../../types/typings";
+} from "../../types/typings.js";
 
 const resolvers = {
   Query: {

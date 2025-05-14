@@ -7,7 +7,7 @@ import {
   MessagePopulated,
   SendMessageArguments,
   SendMessageSubscriptionPayload,
-} from "../../types/typings";
+} from "../../types/typings.js";
 
 const resolvers = {
   Query: {

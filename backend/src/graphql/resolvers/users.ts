@@ -1,7 +1,7 @@
 import { User } from "@prisma/client";
 import { GraphQLError } from "graphql";
 import { verifyAndCreateUsername } from "../../util/functions.js";
-import { CreateUsernameResponse, GraphQLContext } from "../../types/typings";
+import { CreateUsernameResponse, GraphQLContext } from "../../types/typings.js";
 
 const resolvers = {
   Query: {
