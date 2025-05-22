@@ -1,3 +1,4 @@
+import { withFilter } from "graphql-subscriptions";
 import { Prisma } from "@prisma/client";
 import { GraphQLError } from "graphql";
 import { userIsConversationParticipant } from "../../util/functions.js";
@@ -54,7 +55,7 @@ const resolvers = {
           },
           include: messagePopulated,
           orderBy: {
-            createdAt: "desc",
+            createdAt: "asc",
           },
         });
 
@@ -84,13 +85,12 @@ const resolvers = {
       }
 
       const { id: userId } = session.user;
-      const { id: messageId, senderId, conversationId, body } = args;
+      const { conversationId, body } = args;
 
       try {
         const newMessage = await prisma.message.create({
           data: {
-            id: messageId,
-            senderId,
+            senderId: userId,
             conversationId,
             body,
           },
@@ -156,17 +156,27 @@ const resolvers = {
   },
   Subscription: {
     messageSent: {
-      subscribe: (
-        payload: SendMessageSubscriptionPayload,
-        args: { conversationId: string },
-        context: GraphQLContext
-      ) => {
-        const { pubsub } = context;
-        return (
-          pubsub.asyncIterator(["MESSAGE_SENT"]),
-          payload.messageSent.conversationId === args.conversationId
-        );
-      },
+      subscribe: withFilter(
+        (_, __, context?: GraphQLContext) => {
+          if (!context?.pubsub) {
+            throw new GraphQLError("PubSub not provided in context");
+          }
+          if (!context?.session) {
+            // You can return an AsyncIterator that never emits
+            return context.pubsub.asyncIterator([]);
+          }
+          const { pubsub } = context;
+
+          return pubsub.asyncIterator(["MESSAGE_SENT"]);
+        },
+        (
+          payload?: SendMessageSubscriptionPayload,
+          args?: { conversationId: string }
+        ) => {
+          if (!payload || !args?.conversationId) return false;
+          return payload.messageSent.conversationId === args.conversationId;
+        }
+      ),
     },
   },
 };

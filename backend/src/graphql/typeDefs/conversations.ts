@@ -29,6 +29,10 @@ const typeDefs = gql`
   }
 
   type Query {
+    conversation(conversationId: String!): Conversation
+  }
+
+  type Query {
     conversations: [Conversation]
   }
 

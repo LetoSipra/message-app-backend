@@ -6,12 +6,13 @@ import {
 } from "../graphql/resolvers/conversations";
 import { messagePopulated } from "../graphql/resolvers/messages";
 import { RedisPubSub } from "graphql-redis-subscriptions";
+import { ExpressContextFunctionArgument } from "@apollo/server/dist/esm/express4";
 
 export interface Session {
   user?: User;
 }
 
-export interface GraphQLContext {
+export interface GraphQLContext extends ExpressContextFunctionArgument {
   session: Session | null;
   prisma: PrismaClient;
   pubsub: RedisPubSub;
@@ -31,6 +32,11 @@ export interface User {
   username: string;
 }
 
+export interface SearchedUser {
+  id: string;
+  username: string;
+}
+
 export interface CreateUsernameResponse {
   success?: boolean;
   error?: string;
@@ -46,7 +52,6 @@ export interface SearchUsersResponse {
 export interface SendMessageArguments {
   id: string;
   conversationId: string;
-  senderId: string;
   body: string;
 }
 

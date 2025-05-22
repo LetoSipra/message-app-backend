@@ -1,3 +1,4 @@
+import { ApolloServerPluginLandingPageLocalDefault } from "@apollo/server/plugin/landingPage/default";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
@@ -11,6 +12,13 @@ import { RedisPubSub } from "graphql-redis-subscriptions";
 import Redis from "ioredis";
 import { typeDefs, resolvers } from "./graphql/schema.js";
 import { PrismaClient } from "@prisma/client";
+import {
+  getTokenPayload,
+  getUserFromContext,
+  MyJwtPayload,
+  parseCookie,
+} from "./util/functions.js";
+import cookieParser from "cookie-parser";
 
 const redisOptions = `${process.env.REDIS_URL}`;
 
@@ -28,18 +36,31 @@ const schema = makeExecutableSchema({ typeDefs, resolvers });
 
 const wsServer = new WebSocketServer({
   server: httpServer,
-  path: "/subscriptions",
+  path: "/graphql/subscriptions",
 });
+
+const corsOptions = {
+  origin: process.env.CLIENT_ORIGIN,
+  credentials: true,
+};
 
 const serverCleanup = useServer(
   {
     schema,
     context: (ctx) => {
-      if (ctx.connectionParams && ctx.connectionParams.session) {
-        const { session } = ctx.connectionParams;
-        return { session, prisma, pubsub };
+      let session: MyJwtPayload | null = null;
+      const cookieHeader = ctx.extra.request.headers.cookie;
+      //if (!token) return;
+      const cookies = parseCookie(cookieHeader);
+      const token = cookies.token;
+
+      try {
+        session = getTokenPayload(token);
+      } catch (err) {
+        console.warn("WS auth failed:", err);
       }
-      return { session: null, prisma, pubsub };
+
+      return { session, prisma, pubsub };
     },
   },
   wsServer
@@ -60,28 +81,54 @@ const server = new ApolloServer({
         };
       },
     },
+    ApolloServerPluginLandingPageLocalDefault({
+      footer: false,
+      embed: {
+        endpointIsEditable: true,
+      },
+    }),
+    // {
+    //   async requestDidStart(requestContext) {
+    //     // Within this returned object, define functions that respond
+    //     // to request-specific lifecycle events.
+    //     return {
+    //       // The `parsingDidStart` request lifecycle event fires
+    //       // when parsing begins. The event is scoped within an
+    //       // associated `requestDidStart` server lifecycle event.
+    //       async parsingDidStart(requestContext) {
+    //         console.log("Parsing started!");
+    //       },
+    //       async didEncounterErrors(ctx) {
+    //         console.error("🚨 GraphQL Errors:", ctx.errors);
+    //       },
+    //     };
+    //   },
+    // },
   ],
 });
 
 await server.start();
 
 app.use(
-  "/",
-  cors<cors.CorsRequest>(),
+  "/graphql",
+  cors<cors.CorsRequest>(corsOptions),
   express.json(),
+  cookieParser(),
   expressMiddleware(server, {
-    context: async () => {
-      const session = {
-        user: {
-          id: "FAKE_USER_ID",
-          name: "Dev User",
-          email: "dev@example.com",
-          username: "devuser",
-        },
-        expires: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+    context: async ({ req, res }) => {
+      let session: MyJwtPayload | null = null;
+      try {
+        session = getUserFromContext({ req, res });
+      } catch (err) {
+        console.log("Auth error:", err);
+      }
+      //console.log(req.body, "first");
+      return {
+        prisma,
+        pubsub,
+        session,
+        res,
       };
-
-      return { prisma, pubsub, session };
     },
   })
 );
