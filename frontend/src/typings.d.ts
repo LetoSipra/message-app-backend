@@ -5,8 +5,8 @@ type MessagePopulated = {
   };
 } & {
   id: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: number;
+  updatedAt: number;
   conversationId: string;
   senderId: string;
   body: string;
@@ -17,6 +17,7 @@ export interface ConversationParticipantPopulated {
     id: string;
     username: string;
   };
+  hasSeenLatestMessage: boolean;
 }
 
 export interface Conversation {
@@ -128,4 +129,9 @@ export interface ConversationDeletedData {
   conversationDeleted: {
     id: string;
   };
+}
+
+export interface ConversationMarkAsReadVariables {
+  userId: string;
+  conversationId: string;
 }

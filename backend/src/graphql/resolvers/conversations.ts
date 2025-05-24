@@ -37,7 +37,7 @@ const resolvers = {
             },
           },
           include: conversationPopulated,
-          orderBy: { createdAt: "desc" },
+          orderBy: { updatedAt: "desc" },
         });
 
         return conversations;
@@ -71,7 +71,6 @@ const resolvers = {
           },
           include: conversationPopulated,
         });
-        console.log(conversationParticipants);
         if (!conversationParticipants) {
           throw new GraphQLError("Conversation not found");
         }
@@ -169,10 +168,23 @@ const resolvers = {
       context: GraphQLContext
     ): Promise<boolean> {
       const { userId, conversationId } = args;
-      const { session, prisma } = context;
+      const { session, prisma, pubsub } = context;
 
       if (!session?.user) {
         throw new GraphQLError("Not authorized");
+      }
+      // 1) Fetch the participant record for this user + conversation
+      const participant = await prisma.conversationParticipant.findFirst({
+        where: { userId, conversationId },
+        select: { hasSeenLatestMessage: true },
+      });
+      if (!participant) {
+        throw new GraphQLError("Not authorized or participant not found");
+      }
+
+      // 2) If they’ve already seen the latest message, do nothing
+      if (participant.hasSeenLatestMessage) {
+        return false;
       }
 
       try {
@@ -183,6 +195,28 @@ const resolvers = {
           },
           data: {
             hasSeenLatestMessage: true,
+          },
+        });
+
+        // 2) Re-fetch the full conversation (with participants & latestMessage)
+        //    so we can send exactly the same shape the subscription expects:
+        const conversation = await prisma.conversation.findUnique({
+          where: { id: conversationId },
+          include: conversationPopulated, // same include used elsewhere
+        });
+        if (!conversation) {
+          throw new GraphQLError("Conversation not found");
+        }
+
+        // 3) Publish to “CONVERSATION_UPDATED” so subscribers are notified.
+        //    We only changed “hasSeenLatestMessage” on one participant,
+        //    so we can send `addedUserIds`/`removedUserIds` as empty arrays,
+        //    or omit them entirely. The important part is the “conversation” payload.
+        pubsub.publish("CONVERSATION_UPDATED", {
+          conversationUpdated: {
+            conversation: conversation,
+            addedUserIds: [],
+            removedUserIds: [],
           },
         });
 
@@ -211,8 +245,15 @@ const resolvers = {
       }
 
       try {
+        await prisma.conversation.update({
+          where: { id: conversationId },
+          data: { latestMessageId: null },
+        });
         const deletedConversation = await prisma.conversation.delete({
           where: { id: conversationId },
+          include: {
+            participants: true, // <─ make sure we get the array here
+          },
         });
 
         pubsub.publish("CONVERSATION_DELETED", {

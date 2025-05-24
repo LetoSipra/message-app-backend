@@ -2,11 +2,14 @@
 
 import { formatTimestamp } from "@/functions";
 import { ConversationSchema } from "@/graphql/operations/conversations";
+import { useUser } from "@/hooks/useUser";
 import {
   ConversationCreatedSubscriptionData,
+  ConversationDeletedData,
+  ConversationMarkAsReadVariables,
   ConversationPopulated,
 } from "@/typings";
-import { useSubscription } from "@apollo/client";
+import { useMutation, useSubscription } from "@apollo/client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -16,6 +19,7 @@ function ConversationList({
 }: {
   conversations: ConversationPopulated[];
 }) {
+  const { user } = useUser();
   const { data } = useSubscription<ConversationCreatedSubscriptionData>(
     ConversationSchema.Subscriptions.conversationCreated
   );
@@ -23,6 +27,29 @@ function ConversationList({
   const { data: updateData } = useSubscription(
     ConversationSchema.Subscriptions.conversationUpdated
   );
+
+  const { data: deleteData } = useSubscription<ConversationDeletedData>(
+    ConversationSchema.Subscriptions.conversationDeleted
+  );
+
+  const [markConversationAsRead, {}] = useMutation<
+    _Blob,
+    ConversationMarkAsReadVariables
+  >(ConversationSchema.Mutations.markConversationAsRead);
+
+  const handleMarkConversationAsRead = (conversationId: string) => {
+    if (!user) return;
+    try {
+      markConversationAsRead({
+        variables: {
+          conversationId: conversationId,
+          userId: user.id,
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   useEffect(() => {
     if (!updateData?.conversationUpdated) return;
@@ -37,6 +64,12 @@ function ConversationList({
       return [updatedConv, ...others];
     });
   }, [updateData]);
+
+  useEffect(() => {
+    if (!deleteData?.conversationDeleted) return;
+    const { id: deletedConversationId } = deleteData.conversationDeleted;
+    setConvos((prev) => prev.filter((c) => c.id !== deletedConversationId));
+  }, [deleteData]);
 
   useEffect(() => {
     if (!data?.conversationCreated) return;
@@ -60,6 +93,7 @@ function ConversationList({
 
         return (
           <Link
+            onClick={() => handleMarkConversationAsRead(conversation.id)}
             key={conversation.id}
             href={conversation.id}
             className="space-y-2 flex flex-col"
@@ -75,11 +109,26 @@ function ConversationList({
                 </p>
               </div>
               {/* Latest message line */}
-              <p className="text-[#696970] h-7 overflow-hidden whitespace-nowrap truncate">
-                {conversation.latestMessage
-                  ? conversation.latestMessage.body
-                  : ""}
-              </p>
+              <div className="text-[#696970] h-10">
+                {conversation.latestMessage && (
+                  <div className="flex items-center space-x-2">
+                    {conversation.participants.map((p) => {
+                      if (p.user.id === user?.id && !p.hasSeenLatestMessage) {
+                        return (
+                          <div
+                            key={p.user.id}
+                            className="w-3 h-3 bg-white rounded-full shrink-0"
+                          />
+                        );
+                      }
+                      return null;
+                    })}
+                    <p className="truncate">
+                      {conversation.latestMessage.body}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </Link>
         );
