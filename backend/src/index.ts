@@ -89,12 +89,7 @@ const server = new ApolloServer({
     }),
     // {
     //   async requestDidStart(requestContext) {
-    //     // Within this returned object, define functions that respond
-    //     // to request-specific lifecycle events.
     //     return {
-    //       // The `parsingDidStart` request lifecycle event fires
-    //       // when parsing begins. The event is scoped within an
-    //       // associated `requestDidStart` server lifecycle event.
     //       async parsingDidStart(requestContext) {
     //         console.log("Parsing started!");
     //       },
@@ -136,4 +131,4 @@ app.use(
 await new Promise<void>((resolve) =>
   httpServer.listen({ port: 4000 }, resolve)
 );
-console.log(`🚀 Server ready at http://localhost:4000/`);
+console.log(`🚀 Server ready`);
