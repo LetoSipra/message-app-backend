@@ -7,10 +7,7 @@ export default async function Layout({
 }>) {
   return (
     <div className="flex h-screen xl:mx-40">
-      <aside className="w-1/4 flex">
-        <Sidebar />
-        <div className="border-r-1 border-r-[#27272A] flex" />
-      </aside>
+      <Sidebar />
       <main className="flex w-full">{children}</main>
     </div>
   );

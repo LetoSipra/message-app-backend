@@ -34,7 +34,7 @@ export async function loginSignInAction(
 
   let upstream;
   try {
-    upstream = await fetch(process.env.GRAPHQL_URL || "", {
+    upstream = await fetch(process.env.NEXT_PUBLIC_GRAPHQL_URL || "", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

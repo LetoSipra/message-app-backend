@@ -2,7 +2,7 @@
 import { signOutAction } from "@/app/(auth)/(actions)/signOut";
 import { useState } from "react";
 import Modal from "./Modal";
-import { useLazyQuery, useMutation } from "@apollo/client";
+import { useApolloClient, useLazyQuery, useMutation } from "@apollo/client";
 import { UserSchema } from "@/graphql/operations/user";
 import {
   CreateConversationData,
@@ -14,11 +14,13 @@ import { X } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 import { ConversationSchema } from "@/graphql/operations/conversations";
 import { toast } from "sonner";
+
 function SidebarHeader() {
   const { user } = useUser();
   const [modalState, setModalState] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<SearchedUser[]>([]);
   const [input, setInput] = useState("");
+  const client = useApolloClient();
 
   const [searchUsers, { data, loading, error }] = useLazyQuery<
     SearchUsersData,
@@ -165,6 +167,7 @@ function SidebarHeader() {
         <button
           className="flex cursor-pointer w-full h-10 items-center justify-center rounded bg-[#fafafa] text-[#0a0a0b] transition-opacity duration-200 hover:opacity-75"
           onClick={async () => {
+            await client.clearStore();
             await signOutAction();
           }}
         >
