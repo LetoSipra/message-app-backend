@@ -60,9 +60,9 @@ export async function loginSignInAction(
         value: (setCookieHeader.match(/token=([^;]+)/) || [])[1] || "",
         httpOnly: true,
         path: "/",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60, // 7 days
+        sameSite: "none",
         secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60, // 7 days
       });
     }
 
