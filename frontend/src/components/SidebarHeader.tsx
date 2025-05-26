@@ -30,7 +30,6 @@ function SidebarHeader() {
       ConversationSchema.Mutations.createConversation
     );
 
-  //const client = useApolloClient();
   const handleUserSearch = () => {
     searchUsers({
       variables: {
@@ -38,9 +37,6 @@ function SidebarHeader() {
       },
     });
   };
-  // const clearSearchData = async () => {
-  //   client.resetStore();
-  // };
   const handleCreateConversation = () => {
     if (!user) return;
     const IDs = [user?.id, ...selectedUsers.map((user) => user.id)];
@@ -69,7 +65,6 @@ function SidebarHeader() {
         onClose={() => {
           setModalState(false);
           setSelectedUsers([]);
-          setInput("");
         }}
       >
         <div className="border-[#27272A] border-2 space-y-2 p-5 rounded-xl">
@@ -163,12 +158,12 @@ function SidebarHeader() {
       <div className="flex space-x-10 mx-5 justify-center items-center">
         <button
           onClick={() => setModalState(true)}
-          className="flex cursor-pointer w-full h-10 items-center justify-center space-x-2 rounded bg-[#fafafa] text-[#0a0a0b] transition-opacity duration-200 hover:opacity-75"
+          className="flex cursor-pointer w-full h-10 items-center justify-center rounded bg-[#fafafa] text-[#0a0a0b] transition-opacity duration-200 hover:opacity-75"
         >
-          Start conversations
+          Create Conversation
         </button>
         <button
-          className="flex cursor-pointer w-full h-10 items-center justify-center space-x-2 rounded bg-[#fafafa] text-[#0a0a0b] transition-opacity duration-200 hover:opacity-75"
+          className="flex cursor-pointer w-full h-10 items-center justify-center rounded bg-[#fafafa] text-[#0a0a0b] transition-opacity duration-200 hover:opacity-75"
           onClick={async () => {
             await signOutAction();
           }}

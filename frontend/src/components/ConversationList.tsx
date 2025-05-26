@@ -1,6 +1,6 @@
 "use client";
 
-import { formatTimestamp } from "@/functions";
+import { formatTimestamp } from "@/lib/formatTimestamp";
 import { ConversationSchema } from "@/graphql/operations/conversations";
 import { useUser } from "@/hooks/useUser";
 import {

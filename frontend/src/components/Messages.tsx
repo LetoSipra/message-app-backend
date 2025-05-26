@@ -18,7 +18,7 @@ import UpdateModal from "./UpdateModal";
 import { ConversationSchema } from "@/graphql/operations/conversations";
 import { toast } from "sonner";
 import Link from "next/link";
-import { formatTimestamp } from "@/functions";
+import { formatTimestamp } from "@/lib/formatTimestamp";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -117,11 +117,21 @@ function Messages({ slug }: Props) {
 
   const handleSendMessage = () => {
     if (!user?.id) return;
+    if (sendMessageInput.length < 0) return;
+
+    const trimmedStart = sendMessageInput.replace(/^\s+/, "");
+
+    if (/^\s*$/.test(trimmedStart)) {
+      return;
+    }
+
+    const sanitized = trimmedStart.replace(/\s{3,}/g, "  ");
+
     try {
       sendMessage({
         variables: {
           conversationId: slug,
-          body: sendMessageInput,
+          body: sanitized,
         },
       }).then((f) => {
         if (f.data) {
@@ -152,13 +162,15 @@ function Messages({ slug }: Props) {
 
   return (
     <div className="flex-1 justify-between flex flex-col m-5 space-y-2">
-      <UpdateModal
-        modalState={modalState}
-        selectedUsers={selectedUsers}
-        setModalState={setModalState}
-        setSelectedUsers={setSelectedUsers}
-        conversationId={slug}
-      />
+      {modalState && (
+        <UpdateModal
+          modalState={modalState}
+          selectedUsers={selectedUsers}
+          setModalState={setModalState}
+          setSelectedUsers={setSelectedUsers}
+          conversationId={slug}
+        />
+      )}
       <div className="flex justify-between items-center">
         <div className="flex space-x-2 flex-wrap">
           <h1>From:</h1>
@@ -246,8 +258,6 @@ function Messages({ slug }: Props) {
           disabled={sendMessageLoading}
           value={sendMessageInput}
           onChange={(e) => setSendMessageInput(e.target.value)}
-          minLength={3}
-          maxLength={161}
           className="border-2 w-full placeholder:text-[white] rounded-sm focus:outline-white focus:outline p-1.5 border-[#27272A]"
         />
         <button
@@ -255,8 +265,14 @@ function Messages({ slug }: Props) {
           onClick={() => handleSendMessage()}
           className="flex cursor-pointer space-x-1 w-28 items-center justify-center rounded-md  bg-[#fafafa] text-[#0a0a0b] p-2 transition-opacity duration-200 hover:opacity-75"
         >
-          <p>Send</p>
-          <Send />
+          {sendMessageLoading ? (
+            "Loading..."
+          ) : (
+            <>
+              <p>Send</p>
+              <Send />
+            </>
+          )}
         </button>
       </div>
     </div>

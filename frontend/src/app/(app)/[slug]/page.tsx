@@ -1,12 +1,6 @@
 import Messages from "@/components/Messages";
 
-interface Props {
-  params: {
-    slug: string;
-  };
-}
-
-async function Page({ params }: Props) {
+async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
   return <Messages slug={slug} />;

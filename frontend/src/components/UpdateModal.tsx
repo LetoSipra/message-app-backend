@@ -30,7 +30,6 @@ function UpdateModal({
   conversationId,
 }: Props) {
   const { user } = useUser();
-
   const [input, setInput] = useState("");
 
   const [searchUsers, { data, loading, error }] = useLazyQuery<
@@ -74,7 +73,6 @@ function UpdateModal({
       console.log("error", error);
     }
   };
-
   return (
     <Modal
       isOpen={modalState}
