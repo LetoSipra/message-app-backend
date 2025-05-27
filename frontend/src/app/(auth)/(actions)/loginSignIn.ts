@@ -61,6 +61,7 @@ export async function loginSignInAction(
         httpOnly: true,
         path: "/",
         sameSite: "none",
+        domain: process.env.NEXT_PUBLIC_GRAPHQL_URL,
         secure: process.env.NODE_ENV === "production",
         maxAge: 7 * 24 * 60 * 60, // 7 days
       });
