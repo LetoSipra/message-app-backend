@@ -107,7 +107,7 @@ const resolvers = {
       args: { username: string; password: string },
       context: GraphQLContext
     ): Promise<{ token: string; user: User }> {
-      const { prisma, res } = context;
+      const { prisma } = context;
       const user = await prisma.user.findUnique({
         where: {
           username: args.username,
@@ -124,14 +124,6 @@ const resolvers = {
 
       const token = jwt.sign({ user }, process.env.JWT_SECRET || "", {
         expiresIn: "7d",
-      });
-
-      res.cookie("token", token, {
-        httpOnly: true,
-        sameSite: "none",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
       return { token, user };

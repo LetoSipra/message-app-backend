@@ -10,14 +10,19 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 import { createClient } from "graphql-ws";
 import { setContext } from "@apollo/client/link/context";
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
 const GRAPHQL_HTTP = process.env.NEXT_PUBLIC_GRAPHQL_URL!;
 const GRAPHQL_WS = process.env.NEXT_PUBLIC_WEBSOCKET_URL!;
 
 function makeClient() {
   const authLink = setContext((_, { headers }) => {
-    // We only run this on the client, so localStorage is available
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token = getCookie("token");
     return {
       headers: {
         ...headers,
@@ -25,17 +30,19 @@ function makeClient() {
       },
     };
   });
+
   const httpLink = new HttpLink({
     uri: GRAPHQL_HTTP,
     credentials: "include",
   });
+
   const wsLink =
     typeof window !== "undefined"
       ? new GraphQLWsLink(
           createClient({
             url: GRAPHQL_WS,
             connectionParams: () => {
-              const token = localStorage.getItem("token");
+              const token = getCookie("token");
               return token ? { Authorization: `Bearer ${token}` } : {};
             },
           })
@@ -56,7 +63,9 @@ function makeClient() {
           httpLink
         )
       : httpLink;
+
   const link = ApolloLink.from([authLink, splitLink]);
+
   return new ApolloClient({
     cache: new InMemoryCache(),
     link: link,

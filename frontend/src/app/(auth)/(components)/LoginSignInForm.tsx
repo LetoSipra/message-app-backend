@@ -1,8 +1,7 @@
 "use client";
 import { loginSignInAction } from "@/app/(auth)/(actions)/loginSignIn";
 import { SubmitButton } from "./SubmitButton";
-import { useActionState, useEffect } from "react";
-import { redirect } from "next/navigation";
+import { useActionState } from "react";
 
 function LoginSignInForm() {
   const [formState, action, pending] = useActionState(
@@ -10,13 +9,6 @@ function LoginSignInForm() {
     undefined
   );
 
-  useEffect(() => {
-    if (!formState) return;
-    if (formState.success && formState.token) {
-      localStorage.setItem("token", formState.token);
-      redirect("/");
-    }
-  }, [formState]);
   return (
     <form action={action} className="flex flex-col gap-y-2">
       <span className="text-lg text-red-400">
