@@ -64,7 +64,12 @@ const serverCleanup = useServer(
       }
 
       if (!session) {
-        const authHeader = headers.authorization || headers.Authorization;
+        const connectionParams = ctx.connectionParams;
+        const authHeader =
+          connectionParams?.Authorization ||
+          connectionParams?.authorization ||
+          headers.authorization ||
+          headers.Authorization;
         if (
           typeof authHeader === "string" &&
           authHeader.startsWith("Bearer ")
