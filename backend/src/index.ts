@@ -49,17 +49,34 @@ const serverCleanup = useServer(
     schema,
     context: (ctx) => {
       let session: MyJwtPayload | null = null;
-      const cookieHeader = ctx.extra.request.headers.cookie;
-      //if (!token) return;
-      const cookies = parseCookie(cookieHeader);
-      const token = cookies.token;
+      const { headers } = ctx.extra.request;
 
-      try {
-        session = getTokenPayload(token);
-      } catch (err) {
-        console.warn("WS auth failed:", err);
+      const cookieHeader = headers.cookie;
+      if (typeof cookieHeader === "string") {
+        const allCookies = parseCookie(cookieHeader);
+        if (allCookies.token) {
+          try {
+            session = getTokenPayload(allCookies.token);
+          } catch (err) {
+            console.log("WS auth (via cookie) failed:", err);
+          }
+        }
       }
 
+      if (!session) {
+        const authHeader = headers.authorization || headers.Authorization;
+        if (
+          typeof authHeader === "string" &&
+          authHeader.startsWith("Bearer ")
+        ) {
+          const token = authHeader.slice(7);
+          try {
+            session = getTokenPayload(token);
+          } catch (err) {
+            console.log("WS auth (via header) failed:", err);
+          }
+        }
+      }
       return { session, prisma, pubsub };
     },
   },
