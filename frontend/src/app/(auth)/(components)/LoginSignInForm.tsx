@@ -1,13 +1,32 @@
 "use client";
 import { loginSignInAction } from "@/app/(auth)/(actions)/loginSignIn";
 import { SubmitButton } from "./SubmitButton";
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { redirect } from "next/navigation";
 
 function LoginSignInForm() {
   const [formState, action, pending] = useActionState(
     loginSignInAction,
     undefined
   );
+  // const handleLogin = async (formData: FormData) => {
+  //   const username = formData.get("username");
+  //   const password = formData.get("password");
+  //   await fetch("/api/auth/login", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({ username, password }),
+  //     credentials: "include", // make sure this is set so the browser will store the Set-Cookie
+  //   });
+  // };
+  useEffect(() => {
+    if (!formState) return;
+    if (formState.success && formState.token) {
+      console.log("first", formState.token);
+      localStorage.setItem("token", formState.token);
+      redirect("/");
+    }
+  }, [formState]);
   return (
     <form action={action} className="flex flex-col gap-y-2">
       <span className="text-lg text-red-400">

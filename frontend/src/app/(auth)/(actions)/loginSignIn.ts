@@ -1,13 +1,10 @@
 "use server";
 import { print } from "graphql";
 import { UserSchema } from "@/graphql/operations/user";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { loginSignInSchema } from "../(schemas)/loginSignInSchema";
+import { cookies } from "next/headers";
 
-type AuthResults =
-  | { success: true; message: string }
-  | { success: false; message: string };
+type AuthResults = { success: boolean; message: string; token?: string };
 
 export async function loginSignInAction(
   _prev: AuthResults | undefined,
@@ -45,13 +42,12 @@ export async function loginSignInAction(
   }
 
   const payload = await upstream.json();
-
   if (!upstream.ok || payload.errors) {
     const message = payload.errors?.[0]?.message || "Invalid credentials";
     return { success: false, message: message };
   }
   if (mode === "signIn") {
-    return { success: true, message: "Successfully logged in" };
+    return { success: true, message: "Successfull" };
   } else {
     const setCookieHeader = upstream.headers.get("set-cookie");
     if (setCookieHeader) {
@@ -60,12 +56,16 @@ export async function loginSignInAction(
         value: (setCookieHeader.match(/token=([^;]+)/) || [])[1] || "",
         httpOnly: true,
         path: "/",
-        sameSite: "none",
+        sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
         maxAge: 7 * 24 * 60 * 60, // 7 days
       });
     }
 
-    redirect("/");
+    return {
+      success: true,
+      message: "Successfully logged in",
+      token: payload.data.login.token,
+    };
   }
 }
