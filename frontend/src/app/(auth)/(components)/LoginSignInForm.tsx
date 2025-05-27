@@ -9,20 +9,10 @@ function LoginSignInForm() {
     loginSignInAction,
     undefined
   );
-  // const handleLogin = async (formData: FormData) => {
-  //   const username = formData.get("username");
-  //   const password = formData.get("password");
-  //   await fetch("/api/auth/login", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ username, password }),
-  //     credentials: "include", // make sure this is set so the browser will store the Set-Cookie
-  //   });
-  // };
+
   useEffect(() => {
     if (!formState) return;
     if (formState.success && formState.token) {
-      console.log("first", formState.token);
       localStorage.setItem("token", formState.token);
       redirect("/");
     }

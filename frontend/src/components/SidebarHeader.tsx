@@ -167,6 +167,7 @@ function SidebarHeader() {
         <button
           className="flex cursor-pointer w-full h-10 items-center justify-center rounded bg-[#fafafa] text-[#0a0a0b] transition-opacity duration-200 hover:opacity-75"
           onClick={async () => {
+            localStorage.removeItem("token");
             await client.clearStore();
             await signOutAction();
           }}
