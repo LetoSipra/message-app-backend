@@ -2,6 +2,7 @@
 
 import React, { useEffect, ReactNode } from "react";
 import ReactDOM from "react-dom";
+import { X } from "lucide-react";
 
 interface ModalProps {
   /** Whether the modal is visible */
@@ -13,7 +14,7 @@ interface ModalProps {
 }
 
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
-  // On mount, ensure there is a <wdiv id="modal-root"> in <body>
+  // On mount, ensure there is a <div id="modal-root"> in <body>
   useEffect(() => {
     let modalRoot = document.getElementById("modal-root");
     if (!modalRoot) {
@@ -51,6 +52,15 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
 
       {/* Modal box */}
       <div className="relative rounded-2xl shadow-xl p-6 w-full max-w-xl z-10 ">
+        {/* Close button in top-right corner */}
+        <button
+          onClick={onClose}
+          aria-label="Close modal"
+          className="absolute top-10 right-10"
+        >
+          <X size={24} />
+        </button>
+
         {children}
       </div>
     </div>

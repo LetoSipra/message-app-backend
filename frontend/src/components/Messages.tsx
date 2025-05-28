@@ -40,7 +40,6 @@ function Messages({ slug }: Props) {
       conversationId: slug,
     },
   });
-
   const handleConversationDelete = () => {
     try {
       toast.promise(
@@ -63,22 +62,21 @@ function Messages({ slug }: Props) {
     }
   };
 
-  const { subscribeToMore, data } = useQuery<MessagesData, MessagesVariables>(
-    MessageSchema.Query.messages,
-    {
+  const {
+    subscribeToMore,
+    data,
+    loading: messagesQueryLoading,
+  } = useQuery<MessagesData, MessagesVariables>(MessageSchema.Query.messages, {
+    variables: {
+      conversationId: slug,
+    },
+  });
+  const { data: conversationData, loading: conversationQueryLoading } =
+    useQuery<Conversation>(ConversationSchema.Queries.conversation, {
       variables: {
         conversationId: slug,
       },
-    }
-  );
-  const { data: conversationData } = useQuery<Conversation>(
-    ConversationSchema.Queries.conversation,
-    {
-      variables: {
-        conversationId: slug,
-      },
-    }
-  );
+    });
 
   const [sendMessage, { loading: sendMessageLoading }] = useMutation<
     unknown,
@@ -159,6 +157,14 @@ function Messages({ slug }: Props) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  if (messagesQueryLoading || conversationQueryLoading) {
+    return (
+      <div className="flex animate-pulse bg-black rounded-4xl w-full justify-center items-center">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 justify-between flex flex-col m-5 space-y-2">

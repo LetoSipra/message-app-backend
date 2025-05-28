@@ -119,31 +119,28 @@ function SidebarHeader() {
             })}
           </div>
           {selectedUsers.length >= 1 && (
-            <>
-              <h1 className="text-lg mb-3">Selected users</h1>
-              <div className="flex flex-wrap gap-2">
-                {selectedUsers?.map((user) => {
-                  return (
-                    <button
-                      onClick={() =>
-                        setSelectedUsers((prev) => {
-                          if (prev.find((u) => u.id === user.id)) {
-                            return selectedUsers.filter(
-                              (u) => u.id !== user.id
-                            );
-                          }
-                          return [...prev];
-                        })
-                      }
-                      key={user.id}
-                      className="px-3 py-1 cursor-pointer bg-[#fafafa] text-[#0a0a0b] rounded flex transition-opacity duration-200 hover:opacity-75"
-                    >
-                      <X />
-                      {user.username}
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="">
+              {selectedUsers.length >= 1 && (
+                <div className="">
+                  <h1 className="text-lg mb-3">Selected users</h1>
+                  <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto scrollbar-thin">
+                    {selectedUsers.map((user) => (
+                      <button
+                        onClick={() =>
+                          setSelectedUsers((prev) =>
+                            prev.filter((u) => u.id !== user.id)
+                          )
+                        }
+                        key={user.id}
+                        className="px-3 py-1 cursor-pointer bg-[#fafafa] text-[#0a0a0b] rounded flex items-center space-x-1 transition-opacity duration-200 hover:opacity-75"
+                      >
+                        <X />
+                        <span>{user.username}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button
                 disabled={createConversationLoading}
                 onClick={() => handleCreateConversation()}
@@ -153,7 +150,7 @@ function SidebarHeader() {
                   ? "Loading..."
                   : "Create Conversation"}
               </button>
-            </>
+            </div>
           )}
         </div>
       </Modal>
