@@ -1,9 +1,9 @@
-import Messages from "@/components/Messages";
+import ConversationBody from "@/components/ConversationBody";
 
 async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  return <Messages slug={slug} />;
+  return <ConversationBody slug={slug} />;
 }
 
 export default Page;

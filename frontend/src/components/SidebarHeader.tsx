@@ -52,7 +52,10 @@ function SidebarHeader() {
         }),
         {
           loading: "Loading...",
-          success: `Conversation created`,
+          success: () => {
+            setModalState(false);
+            return `Conversation created`;
+          },
           error: (err) => err.message,
         }
       );

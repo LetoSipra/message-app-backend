@@ -5,16 +5,12 @@ import ReactDOM from "react-dom";
 import { X } from "lucide-react";
 
 interface ModalProps {
-  /** Whether the modal is visible */
   isOpen: boolean;
-  /** Called when the user clicks the overlay or wants to close */
   onClose: () => void;
-  /** Any valid React nodes (text, elements, etc.) to show inside the modal */
   children: ReactNode;
 }
 
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
-  // On mount, ensure there is a <div id="modal-root"> in <body>
   useEffect(() => {
     let modalRoot = document.getElementById("modal-root");
     if (!modalRoot) {
@@ -24,16 +20,12 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
     }
   }, []);
 
-  // If the modal is not open, render nothing
   if (!isOpen) {
     return null;
   }
 
-  // Find the container that we’ll portal into
   const modalRoot = document.getElementById("modal-root");
   if (!modalRoot) {
-    // In practice, this should never happen (we create it in useEffect),
-    // but this check satisfies TypeScript’s type system.
     return null;
   }
 
@@ -66,6 +58,5 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
     </div>
   );
 
-  // The `!` after modalRoot tells TypeScript “trust me, this isn’t null now.”
   return ReactDOM.createPortal(modalContent, modalRoot!);
 }

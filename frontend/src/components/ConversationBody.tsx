@@ -25,13 +25,19 @@ interface Props {
   slug: string;
 }
 
-function Messages({ slug }: Props) {
+function ConversationBody({ slug }: Props) {
   const { user } = useUser();
   const [modalState, setModalState] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<SearchedUser[]>([]);
   const [sendMessageInput, setSendMessageInput] = useState("");
   const [showMenu, setShowMenu] = useState(false);
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const [deleteConversation, { loading }] = useMutation<
     ConversationDeletedData,
     ConversationDeleteVariables
@@ -40,6 +46,29 @@ function Messages({ slug }: Props) {
       conversationId: slug,
     },
   });
+
+  const {
+    subscribeToMore,
+    data,
+    loading: messagesQueryLoading,
+  } = useQuery<MessagesData, MessagesVariables>(MessageSchema.Query.messages, {
+    variables: {
+      conversationId: slug,
+    },
+  });
+
+  const { data: conversationData, loading: conversationQueryLoading } =
+    useQuery<Conversation>(ConversationSchema.Queries.conversation, {
+      variables: {
+        conversationId: slug,
+      },
+    });
+
+  const [sendMessage, { loading: sendMessageLoading }] = useMutation<
+    unknown,
+    SendMessageVariables
+  >(MessageSchema.Mutations.sendMessage);
+
   const handleConversationDelete = () => {
     try {
       toast.promise(
@@ -62,30 +91,44 @@ function Messages({ slug }: Props) {
     }
   };
 
-  const {
-    subscribeToMore,
-    data,
-    loading: messagesQueryLoading,
-  } = useQuery<MessagesData, MessagesVariables>(MessageSchema.Query.messages, {
-    variables: {
-      conversationId: slug,
-    },
-  });
-  const { data: conversationData, loading: conversationQueryLoading } =
-    useQuery<Conversation>(ConversationSchema.Queries.conversation, {
-      variables: {
-        conversationId: slug,
-      },
-    });
+  const handleSendMessage = () => {
+    if (!user?.id) return;
+    if (sendMessageInput.length < 0) return;
 
-  const [sendMessage, { loading: sendMessageLoading }] = useMutation<
-    unknown,
-    SendMessageVariables
-  >(MessageSchema.Mutations.sendMessage);
+    const trimmedStart = sendMessageInput.replace(/^\s+/, "");
 
-  // Refs for scroll
-  const containerRef = useRef<HTMLDivElement>(null);
-  const bottomAnchorRef = useRef<HTMLDivElement>(null);
+    if (/^\s*$/.test(trimmedStart)) {
+      return;
+    }
+
+    const sanitized = trimmedStart.replace(/\s{3,}/g, "  ");
+
+    try {
+      sendMessage({
+        variables: {
+          conversationId: slug,
+          body: sanitized,
+        },
+      }).then((f) => {
+        if (f.data) {
+          setSendMessageInput("");
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 0);
+        }
+      });
+    } catch (error) {
+      console.log(error);
+    }
+    inputRef.current?.focus();
+  };
+
+  const handleKeyPress = (e: KeyboardEvent) => {
+    if (e.key === "Enter") {
+      buttonRef.current?.click();
+    }
+  };
+
   useLayoutEffect(() => {
     if (data?.messages?.length && bottomAnchorRef.current) {
       bottomAnchorRef.current.scrollIntoView({ behavior: "auto" });
@@ -113,36 +156,12 @@ function Messages({ slug }: Props) {
     }
   }, [data, subscribeToMore, slug]);
 
-  const handleSendMessage = () => {
-    if (!user?.id) return;
-    if (sendMessageInput.length < 0) return;
-
-    const trimmedStart = sendMessageInput.replace(/^\s+/, "");
-
-    if (/^\s*$/.test(trimmedStart)) {
-      return;
-    }
-
-    const sanitized = trimmedStart.replace(/\s{3,}/g, "  ");
-
-    try {
-      sendMessage({
-        variables: {
-          conversationId: slug,
-          body: sanitized,
-        },
-      }).then((f) => {
-        if (f.data) {
-          setSendMessageInput("");
-        }
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-  // Refs for dropdown
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyPress);
+    return () => {
+      window.removeEventListener("keydown", handleKeyPress);
+    };
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -160,7 +179,7 @@ function Messages({ slug }: Props) {
 
   if (messagesQueryLoading || conversationQueryLoading) {
     return (
-      <div className="flex animate-pulse bg-black rounded-4xl w-full justify-center items-center">
+      <div className="flex animate-pulse bg-[#0a0a0b] rounded-4xl w-full justify-center items-center">
         Loading...
       </div>
     );
@@ -260,6 +279,7 @@ function Messages({ slug }: Props) {
       <div className="w-full flex justify-between items-center space-x-2">
         <input
           placeholder="Type a message"
+          ref={inputRef}
           type="text"
           disabled={sendMessageLoading}
           value={sendMessageInput}
@@ -268,6 +288,7 @@ function Messages({ slug }: Props) {
         />
         <button
           disabled={sendMessageLoading}
+          ref={buttonRef}
           onClick={() => handleSendMessage()}
           className="flex cursor-pointer space-x-1 w-28 items-center justify-center rounded-md  bg-[#fafafa] text-[#0a0a0b] p-2 transition-opacity duration-200 hover:opacity-75"
         >
@@ -285,4 +306,4 @@ function Messages({ slug }: Props) {
   );
 }
 
-export default Messages;
+export default ConversationBody;

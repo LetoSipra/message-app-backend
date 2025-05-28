@@ -11,8 +11,8 @@ import {
 } from "@/typings";
 import { useMutation, useSubscription } from "@apollo/client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 function ConversationList({
   conversations,
@@ -27,7 +27,6 @@ function ConversationList({
   const { data: updateData } = useSubscription(
     ConversationSchema.Subscriptions.conversationUpdated
   );
-
   const { data: deleteData } = useSubscription<ConversationDeletedData>(
     ConversationSchema.Subscriptions.conversationDeleted
   );
@@ -37,33 +36,43 @@ function ConversationList({
     ConversationMarkAsReadVariables
   >(ConversationSchema.Mutations.markConversationAsRead);
 
-  const handleMarkConversationAsRead = (conversationId: string) => {
-    if (!user) return;
-    try {
-      markConversationAsRead({
-        variables: {
-          conversationId: conversationId,
-          userId: user.id,
-        },
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  const currentPath = usePathname();
+
+  const handleMarkConversationAsRead = useCallback(
+    (conversationId: string) => {
+      if (!user) return;
+      try {
+        markConversationAsRead({
+          variables: {
+            conversationId,
+            userId: user.id,
+          },
+        });
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    [user, markConversationAsRead]
+  );
 
   useEffect(() => {
     if (!updateData?.conversationUpdated) return;
 
     const { conversation: updatedConv } = updateData.conversationUpdated;
+    const currentConvId = currentPath.startsWith("/")
+      ? currentPath.substring(1)
+      : currentPath;
+
+    if (updatedConv.id === currentConvId && user) {
+      handleMarkConversationAsRead(currentConvId);
+    }
 
     setConvos((prev) => {
-      // Remove any existing copy of this conversation
       const others = prev.filter((c) => c.id !== updatedConv.id);
 
-      // Put the updated conversation at the front
       return [updatedConv, ...others];
     });
-  }, [updateData]);
+  }, [updateData, currentPath, handleMarkConversationAsRead, user]);
 
   useEffect(() => {
     if (!deleteData?.conversationDeleted) return;
@@ -74,7 +83,6 @@ function ConversationList({
   useEffect(() => {
     if (!data?.conversationCreated) return;
     const newConvo = data.conversationCreated;
-    toast.success("New chat created");
     setConvos((prev) => {
       if (prev.some((c) => c.id === newConvo.id)) {
         return prev;
@@ -113,7 +121,12 @@ function ConversationList({
                 {conversation.latestMessage && (
                   <div className="flex items-center space-x-2">
                     {conversation.participants.map((p) => {
-                      if (p.user.id === user?.id && !p.hasSeenLatestMessage) {
+                      if (
+                        (p.user.id === user?.id &&
+                          !p.hasSeenLatestMessage &&
+                          conversation.id !== currentPath.substring(1)) ||
+                        ""
+                      ) {
                         return (
                           <div
                             key={p.user.id}
